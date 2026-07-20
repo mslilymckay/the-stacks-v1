@@ -91,12 +91,10 @@ window.addEventListener('load', async () => {
   }
 
   // 2. Cinematic Loading Screen State Machine
-  let libraryReady = false;
-  let videoEnded = false;
   let hasFadedOut = false;
 
-  const tryFadeOut = () => {
-    if (libraryReady && videoEnded && !hasFadedOut) {
+  const fadeOutLoadingScreen = () => {
+    if (!hasFadedOut) {
       hasFadedOut = true;
       if (loadingVideo) loadingVideo.style.opacity = '0';
       if (loadingScreen) {
@@ -109,20 +107,24 @@ window.addEventListener('load', async () => {
     }
   };
 
-  // When video ends natively
   if (loadingVideo) {
-    loadingVideo.addEventListener('ended', () => {
-      videoEnded = true;
-      tryFadeOut();
-    });
+    // 1. Standard event for when a video finishes naturally
+    loadingVideo.addEventListener('ended', fadeOutLoadingScreen);
+    
+    // 2. Failsafe for media fragments (t=3.5,7) which often pause at the end mark
+    loadingVideo.addEventListener('pause', fadeOutLoadingScreen);
 
-    // Explicitly play the video to be safe on mobile
+    // Explicitly play the video 
     loadingVideo.play().catch(err => {
-      console.warn("Video play failed or was blocked:", err);
-      // If blocked, set videoEnded to true so it doesn't hang forever
-      videoEnded = true;
-      tryFadeOut();
+      console.warn("Video play blocked by browser:", err);
+      fadeOutLoadingScreen(); // Failsafe 3: If the browser blocks autoplay
     });
+    
+    // Failsafe 4: An absolute timer. 
+    // A 3.5-second clip at 1.5x speed takes ~2.33 seconds.
+    setTimeout(fadeOutLoadingScreen, 2500); 
+  } else {
+    fadeOutLoadingScreen(); // Failsafe 5: If the video element doesn't exist
   }
 });
 
