@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Stacks">
+  
+  <title>The Stacks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="icon" type="image/png" href="icon_small.png">
+  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="manifest" href="manifest.json">
+  
+  <script type="module" src="app.js" defer></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <div id="loading-screen" class="loading-screen">
+    <video autoplay muted playsinline id="loading-video">
+      <source src="loading.mp4#t=3.5,7" type="video/mp4">
+    </video>
+    <button id="skip-loading-btn" class="skip-btn">➔</button>
+  </div>
+
+  <div id="auth-screen" class="auth-screen hidden">
+    <div class="auth-card stacks-card">
+      <h2 class="stacks-section-heading">Welcome to The Stacks</h2>
+      <p style="margin-bottom: 20px; font-size: 0.9rem; opacity: 0.8;">Please log in to wander your stacks.</p>
+      
+      <input type="email" id="auth-email" class="stacks-input" placeholder="Email Address">
+      <input type="password" id="auth-password" class="stacks-input" placeholder="Password">
+      
+      <button id="auth-login-btn" class="stacks-btn" style="width: 100%; margin-top: 10px;">Let's go!</button>
+      <p id="auth-error" style="color: var(--terracotta); font-size: 0.85rem; margin-top: 15px; display: none;"></p>
+    </div>
+  </div>
+
+  <div id="stacks-modal-overlay" class="stacks-modal-overlay hidden">
+    <div id="stacks-modal-card" class="stacks-modal-card">
+      <h2 id="stacks-modal-title" class="stacks-section-heading">Notification</h2>
+      <p id="stacks-modal-message"></p>
+      <input type="text" id="stacks-modal-input" class="toolbar-input" style="display: none; margin-bottom: 15px; border: 1px solid var(--detail-line); box-sizing: border-box;" placeholder="Enter value...">
+      <div style="display: flex; gap: 10px;">
+        <button id="stacks-modal-cancel" class="stacks-btn" style="background-color: transparent; color: var(--text-dark); border: 1px solid var(--detail-line);">Cancel</button>
+        <button id="stacks-modal-confirm" class="stacks-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+  
+  <header class="app-header">
+    <div id="header-scroll-trigger" style="display: flex; align-items: center; gap: 10px; cursor: pointer; flex-grow: 1;">
+      <img src="icon_small.png" alt="The Stacks Logo" class="header-logo" id="header-logo">
+      <h1 class="header-title">The Stacks</h1>
+    </div>
+    <div style="display: flex; gap: 15px; align-items: center;">
+      <button id="feedback-trigger-btn" class="icon-action-btn" title="Send Feedback" style="background: transparent; border: none; padding: 0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="feedback-modal" class="feedback-modal hidden">
+    <div class="feedback-content">
+      <span class="close-modal">✕</span>
+      <h3 style="font-family: 'Courier New'; color: var(--terracotta); margin-top: 0;">Feature Request</h3>
+      <p style="font-size: 12px; color: var(--sage-green); margin-bottom: 15px;">What should we build next?</p>
+      
+      <textarea id="feedback-text" rows="4" placeholder="Type your ideas here..."></textarea>
+      
+      <div style="display: flex; gap: 10px;">
+        <button id="close-feedback-btn" style="background: transparent; color: var(--sage-green); border: 1px solid var(--sage-green);">Cancel</button>
+        <button id="submit-feedback-btn">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="bookshelf">
+    
+    <section id="view-library" class="page-view active">
+      <div class="hero-wrapper">
+        <h2 class="stacks-section-heading" id="hero-label">
+          Your Current Read
+        </h2>
+        <div class="current-read-section" id="current-read-section">
+          
+          <div class="carousel-container" id="active-reads-carousel">
+            </div>
+          
+        </div>
+      </div>
+
+      <div style="padding: 15px 15px 10px 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 id="your-stacks-heading" class="stacks-subheading" style="align: left;">
+            Your Stacks
+          </h2>
+        </div>
+        
+        <div style="display: flex; align-items: center; margin-top: 5px; justify-content: space-between; gap: 10px;">
+          <div>
+            <button id="wander-trigger-btn" title="Wander Stacks" class="wander">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="9" width="16" height="4" rx="1" transform="rotate(-12 12 11)" />
+                <rect x="4" y="14" width="16" height="4" rx="1" />
+                <rect x="4" y="4" width="16" height="4" rx="1" transform="rotate(8 12 6)" />
+              </svg>
+              <p id="library-subheading" style="font-family: 'Georgia', serif; font-size: 0.85rem; color: var(--header-text); margin: 0; font-style: italic;">
+                All Books, by Title (A-Z)
+              </p>
+            </button>
+          </div>
+
+          <div class="layout-toggles" style="display: flex; gap: 10px;">
+            <button class="layout-btn active" data-layout="layout-grid" title="3-Column Grid">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="4" height="4"></rect><rect x="10" y="3" width="4" height="4"></rect><rect x="17" y="3" width="4" height="4"></rect><rect x="3" y="10" width="4" height="4"></rect><rect x="10" y="10" width="4" height="4"></rect><rect x="17" y="10" width="4" height="4"></rect><rect x="3" y="17" width="4" height="4"></rect><rect x="10" y="17" width="4" height="4"></rect><rect x="17" y="17" width="4" height="4"></rect></svg>
+            </button>
+            <button class="layout-btn" data-layout="layout-cards" title="2-Column Cards">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            </button>
+            <button class="layout-btn" data-layout="layout-list" title="1-Column List">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="toolbar-input-wrapper" style="margin-top: 15px; margin-bottom: 5px; position: relative; width: 100%;">
+          <svg class="toolbar-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="local-search" class="toolbar-input with-icon" style="padding-left: 35px; padding-right: 40px; width: 100%;" placeholder="Search title, author, isbn, notes...">
+          
+          <div style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;">
+            <button id="clear-search-btn" style="background: none; border: none; color: var(--sage-green); padding: 0; cursor: pointer; display: none; align-items: center; justify-content: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
+        
+      </div>
+      
+      <div class="book-grid" id="book-grid"></div>
+    </section>
+
+    <section id="view-details" class="page-view">
+      <div class="details-header" style="display: flex; align-items: center; padding: 15px; position: sticky; top: 0; background: var(--bg-color); z-index: 10;">
+        <button id="close-details-btn" style="background: transparent; border: none; padding: 0; display: flex; align-items: center; gap: 5px; color: var(--terracotta); font-family: 'Courier New', Courier, monospace; font-weight: bold; cursor: pointer; transition: opacity 0.2s; -webkit-tap-highlight-color: transparent;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back
+        </button>
+      </div>
+
+      <div id="journal-content" style="padding: 0 20px 40px 20px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+        </div>
+    </section>
+
+    <section id="view-search" class="page-view">
+      <div class="hero-wrapper">
+        <h2 class="stacks-section-heading">
+          Find a Book
+        </h2>
+        <div class="search-form-container">
+          
+          <div class="search-input-wrapper" style="position: relative; width: 100%; margin-bottom: 5px;">
+            <input type="text" id="search-input" class="toolbar-input" placeholder="Title, author, or ISBN..." style="border: 1px solid var(--detail-line); padding-right: 45px; width: 100%;">
+            
+            <button id="start-scan-btn" class="icon-action-btn" title="Scan Barcode" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); color: var(--sage-green);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><rect x="7" y="7" width="10" height="10"></rect></svg>
+            </button>
+          </div>
+          
+          <button id="search-btn">Search</button>
+
+          <div id="scanner-container" class="scanner-container hidden">
+            <div id="reader"></div>
+            <button id="stop-scan-btn" class="card-btn stop-scan-btn" style="background: transparent; border: 1px solid var(--terracotta); border-radius: 8px; padding: 10px; font-family: 'Courier New'; font-weight: bold;">Cancel Scan</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="search-results-header" class="hidden" style="padding: 25px 15px 10px 15px; margin-bottom: 15px;">
+        <h2 class="stacks-subheading">
+          Results from Google Books
+        </h2>
+      </div>
+      
+      <div id="search-results-container" class="search-results-list"></div>
+    </section>
+
+    <section id="view-stats" class="page-view">
+      <div style="padding: 0 15px 10px 15px; display: flex; justify-content: space-between; align-items: center;">
+        <h2 class="stacks-section-heading">
+          Your Reading Journey
+        </h2>
+    
+        <select id="stats-year-select" style="appearance: none; background: var(--sage-green); border: none; color: var(--bg-color); border-radius: 20px; padding: 6px 16px; font-family: 'Courier New', Courier, monospace; font-weight: bold; outline: none; cursor: pointer; text-align: center;">
+          <option value="all">All Time</option>
+        </select>
+      </div>
+    
+      <div id="stats-chart-container" style="position: relative; padding: 0 15px 15px 15px; width: 100%; height: 250px;">
+        <canvas id="stats-chart"></canvas>
+      </div>
+    
+      <div id="stats-drilldown-nav" class="hidden" style="padding: 0 15px 10px 15px; text-align: center;">
+        <button id="btn-stats-back" style="background: var(--sage-green); color: var(--bg-color); border: none; border-radius: 20px; padding: 6px 16px; font-family: 'Courier New'; font-weight: bold; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+          </button>
+      </div>
+    
+      <div style="padding: 0 15px 25px 15px;">
+        <h2 class="stacks-subheading" id="stats-list-title">
+          Finished Books
+        </h2>
+    
+        <button id="btn-view-in-stacks" style="background: transparent; border: none; color: var(--terracotta); font-family: 'Courier New', monospace; font-size: 0.85rem; font-weight: bold; cursor: pointer; padding: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 4px;">
+          View in Stacks ↗
+        </button>
+    
+        <div id="stats-book-list" class="book-grid layout-list" style="display: flex; flex-direction: column; gap: 10px;">
+        </div>
+      </div>
+    </section>
+
+    <section id="view-focus" class="page-view">
+      <div class="focus-container">
+        <button id="focus-close-btn" class="focus-close">✕</button>
+        
+        <img src="focus.gif" alt="Reading peacefully" class="focus-bg">
+        
+        <div class="timer-overlay" id="timer-toggle">
+          <div class="timer-display" id="timer-display">20:00</div>
+          
+          <div class="timer-controls">
+            <button id="play-pause-btn" class="icon-action-btn" title="Start/Pause Timer">
+              <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+            </button>
+            
+            <div class="native-select-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="clock-icon"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              
+              <select id="focus-duration" class="hidden-native-select">
+                <option value="5">5s (demo)</option>
+                <option value="900">15 Minutes</option>
+                <option value="1200" selected>20 Minutes</option>
+                <option value="1800">30 Minutes</option>
+                <option value="2700">45 Minutes</option>
+                <option value="3600">1 Hour</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="wander-sheet" class="bottom-sheet" style="height: max-content; padding-bottom: max(env(safe-area-inset-bottom), 30px);">
+    <div class="sheet-handle"></div>
+    <div class="card-detail-container">
+      <div class="punch-hole"></div>
+      
+      <h3 style="font-family: 'Courier New', Courier, monospace; color: var(--terracotta); margin: 10px 0 20px 0; text-align: center;">
+        Wander Your Stacks
+      </h3>
+
+      <div class="quick-filters">
+        <button class="quick-btn" data-status="1" data-sort="date_started_desc">Current Reads</button>
+        <button class="quick-btn" data-status="0" data-sort="date_added_desc">TBR List</button>
+        <button class="quick-btn" data-status="2" data-sort="date_finished_desc">Finished</button>
+        <button class="quick-btn" data-status="3" data-sort="date_added_desc">Gave Up</button>
+      </div>
+
+      <div class="red-line" style="margin: 15px 0 10px 0;"></div>
+
+      <div class="advanced-filters" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px;">
+        <div style="display: flex; gap: 10px; width: 100%;">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-family: 'Courier New', monospace; font-size: 0.8rem; color: var(--sage-green); font-weight: bold;">Finished Year</label>
+            <select id="filter-year" class="toolbar-input" style="width: 100%; padding: 8px; font-size: 0.85rem; border: 1px solid var(--detail-line); background: var(--card-bg); border-radius: 6px; height: 36px;">
+              <option value="all">All Years</option>
+            </select>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-family: 'Courier New', monospace; font-size: 0.8rem; color: var(--sage-green); font-weight: bold;">Rating</label>
+            <select id="filter-rating" class="toolbar-input" style="width: 100%; padding: 8px; font-size: 0.85rem; border: 1px solid var(--detail-line); background: var(--card-bg); border-radius: 6px; height: 36px;">
+              <option value="all">All Ratings</option>
+              <option value="5">5 Stars</option>
+              <option value="4">4+ Stars</option>
+              <option value="3">3+ Stars</option>
+              <option value="unrated">Unrated</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-family: 'Courier New', monospace; font-size: 0.8rem; color: var(--sage-green); font-weight: bold;">Category</label>
+          <select id="filter-category" class="toolbar-input" style="width: 100%; padding: 8px; font-size: 0.85rem; border: 1px solid var(--detail-line); background: var(--card-bg); border-radius: 6px; height: 36px;">
+            <option value="all">All Categories</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-top: 5px; flex-wrap: wrap;">
+          <label style="display: flex; align-items: center; gap: 6px; font-family: 'Courier New', monospace; font-size: 0.85rem; color: var(--text-dark); cursor: pointer; user-select: none;">
+            <input type="checkbox" id="filter-has-notes" style="accent-color: var(--sage-green); width: 16px; height: 16px;"> Has Notes
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-family: 'Courier New', monospace; font-size: 0.85rem; color: var(--text-dark); cursor: pointer; user-select: none;">
+            <input type="checkbox" id="filter-missing-cover" style="accent-color: var(--sage-green); width: 16px; height: 16px;"> Missing Cover
+          </label>
+        </div>
+      </div>
+
+      <!-- Apply / Clear Filters buttons -->
+      <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px; width: 100%; box-sizing: border-box;">
+        <button id="btn-apply-filters" class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background-color: var(--terracotta); color: white; border: none; padding: 12px; border-radius: 8px; font-family: 'Courier New', Courier, monospace; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: transform 0.1s;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="9" width="16" height="4" rx="1" transform="rotate(-12 12 11)" />
+            <rect x="4" y="14" width="16" height="4" rx="1" />
+            <rect x="4" y="4" width="16" height="4" rx="1" transform="rotate(8 12 6)" />
+          </svg>
+          Wander
+        </button>
+        <button id="btn-clear-filters" class="btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; background-color: transparent; color: var(--terracotta); border: 1px solid var(--terracotta); padding: 12px; border-radius: 8px; font-family: 'Courier New', Courier, monospace; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: transform 0.1s;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          Clear All
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <button class="fab" id="top-fab">↑</button>
+  
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-target="view-library" title="Library">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
+    </button>
+    <button class="nav-item" data-target="view-search" title="Search">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    </button>
+    <button class="nav-item" data-target="view-stats" title="Stats">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+    </button>
+    <button class="nav-item" data-target="view-focus" title="Focus Mode">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
+    </button>
+  </nav>
+
+</body>
+</html>
