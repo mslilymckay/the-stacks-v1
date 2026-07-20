@@ -70,7 +70,6 @@ window.addEventListener('load', async () => {
   const loadingVideo = document.getElementById('loading-video');
   const loadingScreen = document.getElementById('loading-screen');
   const authScreen = document.getElementById('auth-screen');
-  const skipBtn = document.getElementById('skip-loading-btn');
   
   // Register Service Worker
   if ('serviceWorker' in navigator) {
