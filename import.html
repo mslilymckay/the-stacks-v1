@@ -2,26 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Import Utility</title>
+  <title>CSV Import Utility</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-    #status { 
-      margin-top: 20px; 
-      font-family: monospace; 
-      white-space: pre-wrap; 
-      background: #f4f4f4; 
-      padding: 15px; 
-      border-radius: 4px; 
-      max-height: 400px; 
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    #status {
+      margin-top: 20px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      background: #f4f4f4;
+      padding: 15px;
+      border-radius: 4px;
+      max-height: 400px;
       overflow-y: auto;
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
-  <h1>Book Import Utility</h1>
-  <p>Select your .book JSON files to upload to the database.</p>
-  <input type="file" id="fileInput" multiple accept=".book,.json">
-  <button id="uploadBtn">Process and Upload</button>
+  <h1>CSV Book Import Utility</h1>
+  <p>Select your .csv reading list file to upload to the database.</p>
+  
+  <input type="file" id="fileInput" accept=".csv">
+  <button id="uploadBtn">Process Upload</button>
+  
   <div id="status"></div>
 
   <script type="module">
@@ -35,87 +42,68 @@
     const uploadBtn = document.getElementById('uploadBtn');
     const statusDiv = document.getElementById('status');
 
-    uploadBtn.addEventListener('click', async () => {
-      const files = Array.from(fileInput.files);
-      if (files.length === 0) {
-        statusDiv.textContent = 'Please select files first.\n';
+    uploadBtn.addEventListener('click', () => {
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        statusDiv.textContent = 'Please select a CSV file first.\n';
         return;
       }
-      
-      statusDiv.textContent = 'Starting upload...\n';
 
-      for (const file of files) {
-        try {
-          const text = await file.text();
-          const json = JSON.parse(text);
+      statusDiv.textContent = 'Parsing CSV...\n';
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async function(results) {
+          const rows = results.data;
+          statusDiv.textContent += `Found ${rows.length} books. Starting upload...\n\n`;
           
-          let coverUrl = null;
-          
-          // Google Books API Fetch & Throttle
-          if (json.isbn) {
-            const cleanIsbn = String(json.isbn).replace(/[-\s]/g, '');
-            const apiKey = 'AIzaSyD8cH6KE9JXatD9t0tyc6QETNMrtJP-Pt4';
-            
+          let successCount = 0;
+          let errorCount = 0;
+
+          for (const row of rows) {
             try {
-              const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&key=${apiKey}`);
-              if (res.ok) {
-                const googleData = await res.json();
-                if (googleData.items && googleData.items.length > 0) {
-                  const info = googleData.items[0].volumeInfo;
-                  if (info.imageLinks && info.imageLinks.thumbnail) {
-                    coverUrl = info.imageLinks.thumbnail.replace('http:', 'https:');
-                  }
-                }
-              }
-            } catch (apiErr) {
-              console.warn(`Could not fetch cover for ${json.title}`, apiErr);
+              // Map the CSV headers to the Supabase schema
+              // Notice we omit 'uuid' so Supabase generates a new one automatically
+              const bookEntry = {
+                title: row['Title'] || 'Unknown Title',
+                author: row['Author'] || 'Unknown Author',
+                category: row['Category (Genre)'] || 'Uncategorized',
+                isbn: row['ISBN'] || null,
+                read_date: row['Read Date'] ? new Date(row['Read Date']).toISOString() : null,
+                cover_url: row['Cover URL'] || null,
+                
+                // Hardcoded values for this specific import
+                user_id: '1de755f3-fcc6-4a3e-ae3f-f233089cd024',
+                date_added: new Date().toISOString(),
+                status: 2 // Finished
+              };
+
+              const { error } = await supabase.from('books-multi').insert([bookEntry]);
+              
+              if (error) throw error;
+              
+              successCount++;
+              statusDiv.textContent += `✓ Uploaded: ${bookEntry.title}\n`;
+              
+            } catch (err) {
+              errorCount++;
+              statusDiv.textContent += `✕ Error uploading ${row['Title']}: ${err.message}\n`;
             }
             
-            await new Promise(resolve => setTimeout(resolve, 800));
+            statusDiv.scrollTop = statusDiv.scrollHeight;
           }
-
-          // ==========================================
-          // STATUS MAPPING LOGIC
-          // ==========================================
-          let mappedStatus = 0; // Default to TBR (0)
           
-          if (json.status === 1) {
-            mappedStatus = 2; // Old Backup: Finished (1) -> New App: Finished (2)
-          } else if (json.status === 2) {
-            mappedStatus = 1; // Old Backup: Current (2) -> New App: Current (1)
+          statusDiv.textContent += `\nImport complete! Successfully added ${successCount} books.`;
+          if (errorCount > 0) {
+            statusDiv.textContent += ` Encountered ${errorCount} errors.`;
           }
-
-          // Map the JSON backup to match the exact Supabase schema
-          const bookEntry = {
-            uuid: json.uuid,
-            title: json.title,
-            author: json.author,
-            category: json.category || 'Uncategorized',
-            pages: json.pages || 0,
-            rating: json.rating || 0,
-            activities: json.activities || null,
-            isbn: json.isbn || null,
-            
-            status: mappedStatus, // <-- Safely insert the translated status here!
-            
-            read_date: json.readDate ? new Date(json.readDate * 1000).toISOString() : null,
-            date_added: json.date ? new Date(json.date * 1000).toISOString() : new Date().toISOString(),
-            cover_url: coverUrl,
-            notes: null,
-            date_started: null 
-          };
-
-          const { error } = await supabase.from('books-multi').upsert([bookEntry]);
-          
-          if (error) throw error;
-          statusDiv.textContent += `✓ Uploaded: ${json.title}\n`;
-          statusDiv.scrollTop = statusDiv.scrollHeight;
-          
-        } catch (err) {
-          statusDiv.textContent += `✕ Error uploading ${file.name}: ${err.message}\n`;
+        },
+        error: function(err) {
+          statusDiv.textContent += `✕ CSV Parsing Error: ${err.message}\n`;
         }
-      }
-      statusDiv.textContent += '\nImport completely finished! You are ready to open The Stacks.';
+      });
     });
   </script>
 </body>
