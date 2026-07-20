@@ -87,10 +87,8 @@ window.addEventListener('load', async () => {
   if (session) {
     loadBooks(); 
   } else {
-    // Clear sandbox local books cache on logout/no session
-    localStorage.removeItem('the_stacks_local_books');
-    document.dispatchEvent(new CustomEvent('library-loaded'));
-    if (authScreen) authScreen.classList.remove('hidden');
+    // No active session. Show the login veil.
+    document.getElementById('auth-screen').classList.remove('hidden');
   }
 
   // 2. Cinematic Loading Screen State Machine
@@ -152,6 +150,30 @@ window.addEventListener('load', async () => {
     libraryReady = true;
     tryFadeOut();
   }, 5000);
+});
+
+// Register user via Supabase and route to library dashboard
+document.getElementById('auth-register-btn').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value;
+  const password = document.getElementById('auth-password').value;
+  const errorText = document.getElementById('auth-error');
+  
+  errorText.style.display = 'none';
+
+  // Supabase Registration Call
+  const { data, error } = await supabase.auth.signUp({
+    email: email,
+    password: password
+  });
+
+  if (error) {
+    errorText.textContent = error.message;
+    errorText.style.display = 'block';
+  } else {
+    // Success! Hide the screen and load the library
+    document.getElementById('auth-screen').classList.add('hidden');
+    loadBooks(); 
+  }
 });
 
 // Authenticate user via Supabase and route to library dashboard
