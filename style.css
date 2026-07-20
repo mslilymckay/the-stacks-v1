@@ -1581,6 +1581,33 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
+.auth-toggle-group {
+  display: flex;
+  background: var(--bg-color);
+  border: 1px solid var(--detail-line);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.auth-toggle-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 8px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  color: var(--sage-green);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-toggle-btn.active {
+  background: var(--sage-green);
+  color: var(--bg-color);
+  font-weight: bold;
+}
+
 .stacks-input {
   width: 100%;
   padding: 12px;
