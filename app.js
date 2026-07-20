@@ -10,7 +10,7 @@ const supabaseKey = 'sb_publishable_H2EPwvAaziQVz8T4yExdEw_bQrB5f3V';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Centralized Demo DB Configuration
-const TABLE_NAME = 'books';
+const TABLE_NAME = 'books_multi';
 
 // HTML Escaping Helper to prevent XSS injection
 function escapeHtml(unsafe) {
