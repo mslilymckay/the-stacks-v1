@@ -80,7 +80,7 @@
                 status: 2 // Finished
               };
 
-              const { error } = await supabase.from('books-multi').insert([bookEntry]);
+              const { error } = await supabase.from('books_multi').insert([bookEntry]);
               
               if (error) throw error;
               
