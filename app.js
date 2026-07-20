@@ -152,51 +152,76 @@ window.addEventListener('load', async () => {
   }, 5000);
 });
 
-// Register user via Supabase and route to library dashboard
-document.getElementById('auth-register-btn').addEventListener('click', async () => {
+// ==========================================
+// DYNAMIC AUTHENTICATION LOGIC
+// ==========================================
+let isRegisterMode = false;
+
+const toggleLogin = document.getElementById('toggle-login');
+const toggleRegister = document.getElementById('toggle-register');
+const authHeader = document.getElementById('auth-header');
+const authSubmitBtn = document.getElementById('auth-submit-btn');
+const authErrorText = document.getElementById('auth-error');
+
+// 1. Handle the visual toggle switch
+function setAuthMode(register) {
+  isRegisterMode = register;
+  authErrorText.style.display = 'none'; // Clear any lingering errors on switch
+  
+  if (register) {
+    toggleRegister.classList.add('active');
+    toggleLogin.classList.remove('active');
+    authHeader.textContent = 'Create Account';
+    authSubmitBtn.textContent = 'Create Account';
+  } else {
+    toggleLogin.classList.add('active');
+    toggleRegister.classList.remove('active');
+    authHeader.textContent = 'Welcome to The Stacks';
+    authSubmitBtn.textContent = 'Let\'s go!';
+  }
+}
+
+toggleLogin.addEventListener('click', () => setAuthMode(false));
+toggleRegister.addEventListener('click', () => setAuthMode(true));
+
+// 2. Handle the single submit button
+authSubmitBtn.addEventListener('click', async () => {
   const email = document.getElementById('auth-email').value;
   const password = document.getElementById('auth-password').value;
-  const errorText = document.getElementById('auth-error');
   
-  errorText.style.display = 'none';
+  authErrorText.style.display = 'none';
+  authSubmitBtn.textContent = isRegisterMode ? 'Creating...' : 'Verifying...';
 
-  // Supabase Registration Call
-  const { data, error } = await supabase.auth.signUp({
-    email: email,
-    password: password
-  });
+  let authResponse;
 
-  if (error) {
-    errorText.textContent = error.message;
-    errorText.style.display = 'block';
+  // Branch the logic based on the toggle state
+  if (isRegisterMode) {
+    authResponse = await supabase.auth.signUp({
+      email: email,
+      password: password
+    });
+  } else {
+    authResponse = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+  }
+
+  // Handle the unified response
+  if (authResponse.error) {
+    authErrorText.textContent = "Oops! " + authResponse.error.message;
+    authErrorText.style.display = 'block';
+    
+    // Reset button text on error
+    authSubmitBtn.textContent = isRegisterMode ? 'Create Account' : 'Let\'s go!';
   } else {
     // Success! Hide the screen and load the library
     document.getElementById('auth-screen').classList.add('hidden');
-    loadBooks(); 
-  }
-});
-
-// Authenticate user via Supabase and route to library dashboard
-document.getElementById('auth-login-btn').addEventListener('click', async () => {
-  const email = document.getElementById('auth-email').value;
-  const password = document.getElementById('auth-password').value;
-  const errorText = document.getElementById('auth-error');
-  const loginBtn = document.getElementById('auth-login-btn');
-  
-  errorText.style.display = 'none';
-  loginBtn.textContent = 'Verifying...';
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: email,
-    password: password
-  });
-
-  if (error) {
-    errorText.textContent = "Oops! " + error.message;
-    errorText.style.display = 'block';
-    loginBtn.textContent = "Let's go!";
-  } else {
-    document.getElementById('auth-screen').classList.add('hidden');
+    
+    // Reset the fields so they are empty if the user signs out later
+    document.getElementById('auth-email').value = '';
+    document.getElementById('auth-password').value = '';
+    
     loadBooks(); 
   }
 });
