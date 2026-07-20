@@ -1,7 +1,7 @@
 {
   "name": "The Stacks",
   "short_name": "Stacks",
-  "start_url": "/the-stacks/",
+  "start_url": "/the-stacks-v1/",
   "display": "standalone",
   "background_color": "#F5EEDB",
   "theme_color": "#A65239",
