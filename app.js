@@ -110,15 +110,6 @@ window.addEventListener('load', async () => {
     }
   };
 
-  // Skip button click: force fade out immediately
-  if (skipBtn) {
-    skipBtn.addEventListener('click', () => {
-      videoEnded = true;
-      libraryReady = true;
-      tryFadeOut();
-    });
-  }
-
   // When video ends natively
   if (loadingVideo) {
     loadingVideo.addEventListener('ended', () => {
@@ -134,22 +125,6 @@ window.addEventListener('load', async () => {
       tryFadeOut();
     });
   }
-
-  // When library (or login screen) is ready
-  document.addEventListener('library-loaded', () => {
-    libraryReady = true;
-    if (skipBtn && !hasFadedOut) {
-      skipBtn.style.display = 'flex'; // Show skip button so they can skip the rest of the video
-    }
-    tryFadeOut();
-  });
-
-  // Fallback safety timeout (5 seconds)
-  setTimeout(() => {
-    videoEnded = true;
-    libraryReady = true;
-    tryFadeOut();
-  }, 5000);
 });
 
 // ==========================================
