@@ -31,16 +31,17 @@
 
   <div id="auth-screen" class="auth-screen hidden">
     <div class="auth-card stacks-card">
-      <h2 class="stacks-section-heading">Welcome to The Stacks</h2>
-      <p style="margin-bottom: 20px; font-size: 0.9rem; opacity: 0.8;">Please log in to wander your stacks.</p>
+      <h2 id="auth-header" class="stacks-section-heading">Welcome to The Stacks</h2>
+
+      <div class="auth-toggle-group">
+        <button id="toggle-login" class="auth-toggle-btn active">Log In</button>
+        <button id="toggle-register" class="auth-toggle-btn">Sign Up</button>
+      </div>
       
       <input type="email" id="auth-email" class="stacks-input" placeholder="Email Address">
       <input type="password" id="auth-password" class="stacks-input" placeholder="Password">
       
-      <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <button id="auth-register-btn" class="stacks-btn" style="background: transparent; color: var(--terracotta); border: 1px solid var(--terracotta);">Create Account</button>
-        <button id="auth-login-btn" class="stacks-btn">Let's go!</button>
-      </div>
+      <button id="auth-submit-btn" class="stacks-btn" style="width: 100%; margin-top: 10px;">Let's go!</button>
       
       <p id="auth-error" style="color: var(--terracotta); font-size: 0.85rem; margin-top: 15px; display: none;"></p>
     </div>
