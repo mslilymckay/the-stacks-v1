@@ -201,62 +201,6 @@ authSubmitBtn.addEventListener('click', async () => {
   }
 });
 
-// Log out user via Supabase, clear caches, and return to auth screen
-const headerLogo = document.getElementById('header-logo');
-if (headerLogo) {
-  headerLogo.addEventListener('click', async (e) => {
-    e.stopPropagation(); // Prevents triggering header-scroll-trigger top scroll
-    const confirmLogout = await showStacksModal("Log Out", "Are you sure you want to log out of The Stacks?", true);
-    if (confirmLogout) {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Logout failed:", error);
-        showToast("Logout failed");
-      } else {
-        // Clear local storage books cache & global state
-        localStorage.removeItem('the_stacks_local_books');
-        globalLibraryData = [];
-        
-        // Reset auth inputs & error display
-        const emailInput = document.getElementById('auth-email');
-        const passwordInput = document.getElementById('auth-password');
-        const errorText = document.getElementById('auth-error');
-        const loginBtn = document.getElementById('auth-login-btn');
-        if (emailInput) emailInput.value = '';
-        if (passwordInput) passwordInput.value = '';
-        if (errorText) errorText.style.display = 'none';
-        if (loginBtn) loginBtn.textContent = "Let's go!";
-        
-        // Hide details container & all other views
-        const detailsContainer = document.getElementById('view-details');
-        if (detailsContainer) detailsContainer.classList.remove('active');
-        
-        const pageViews = document.querySelectorAll('.page-view');
-        pageViews.forEach(v => v.classList.remove('active'));
-        
-        // Show default library page & update active class on menu tabs
-        const libraryView = document.getElementById('view-library');
-        if (libraryView) libraryView.classList.add('active');
-        
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-          item.classList.remove('active');
-          if (item.getAttribute('data-target') === 'view-library') {
-            item.classList.add('active');
-          }
-        });
-        lastActiveTab = 'view-library';
-        
-        // Show the login authentication overlay
-        const authScreen = document.getElementById('auth-screen');
-        if (authScreen) authScreen.classList.remove('hidden');
-        
-        showToast("Logged out successfully");
-      }
-    }
-  });
-}
-
 // =========================================================================
 // MODULE 3: THE MAIN LIBRARY VIEW (THE DASHBOARD)
 // =========================================================================
