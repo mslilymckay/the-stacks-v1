@@ -2518,49 +2518,52 @@ async function fetchBooksFromAPIs(query) {
     finalQuery = `isbn:${numbersOnly}`;
   }
 
-  // Try Open Library first (with explicit fields parameter) to avoid keyless Google Books 429 rate limits
+  const apiKey = 'AIzaSyD8cH6KE9JXatD9t0tyc6QETNMrtJP-Pt4';
+
+  // Try Google Books API first (prioritized using hardcoded API key)
   try {
-    const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(finalQuery)}&limit=10&fields=key,title,author_name,cover_i,isbn,subject,number_of_pages_median,number_of_pages`);
-    if (!response.ok) throw new Error("Open Library API failed");
-    const olData = await response.json();
-    if (olData.docs && olData.docs.length > 0) {
-      data = {
-        items: olData.docs.map(doc => {
-          const author = doc.author_name ? doc.author_name.join(', ') : 'Unknown Author';
-          const isbn = doc.isbn ? doc.isbn[0] : '';
-          let thumbnail = getGenericPlaceholderCoverUrl(doc.title, author);
-          if (doc.cover_i) {
-            thumbnail = `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`;
-          } else if (isbn) {
-            thumbnail = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
-          }
-          return {
-            volumeInfo: {
-              title: doc.title,
-              authors: doc.author_name || [],
-              categories: doc.subject || [],
-              pageCount: doc.number_of_pages_median || doc.number_of_pages || 0,
-              imageLinks: { thumbnail },
-              infoLink: `https://openlibrary.org${doc.key}`,
-              industryIdentifiers: doc.isbn ? [{ type: 'ISBN_13', identifier: doc.isbn[0] }] : []
-            }
-          };
-        })
-      };
-    } else {
-      throw new Error("Open Library docs empty");
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(finalQuery)}&maxResults=10&key=${apiKey}`);
+    if (!response.ok) throw new Error(`Google Books API returned status ${response.status}`);
+    data = await response.json();
+    if (!data.items || data.items.length === 0) {
+      throw new Error('Google Books API returned empty items');
     }
-  } catch (e) {
-    console.warn("Open Library API failed, falling back to Google Books:", e);
+  } catch (googleErr) {
+    console.warn("Google Books API failed, falling back to Open Library:", googleErr);
+    // Fall back to Open Library (with explicit fields parameter)
     try {
-      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(finalQuery)}&maxResults=10`);
-      if (!response.ok) throw new Error(`Google Books returned status ${response.status}`);
-      data = await response.json();
-      if (!data.items || data.items.length === 0) {
-        throw new Error('Google Books returned empty items');
+      const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(finalQuery)}&limit=10&fields=key,title,author_name,cover_i,isbn,subject,number_of_pages_median,number_of_pages`);
+      if (!response.ok) throw new Error("Open Library API failed");
+      const olData = await response.json();
+      if (olData.docs && olData.docs.length > 0) {
+        data = {
+          items: olData.docs.map(doc => {
+            const author = doc.author_name ? doc.author_name.join(', ') : 'Unknown Author';
+            const isbn = doc.isbn ? doc.isbn[0] : '';
+            let thumbnail = getGenericPlaceholderCoverUrl(doc.title, author);
+            if (doc.cover_i) {
+              thumbnail = `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`;
+            } else if (isbn) {
+              thumbnail = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
+            }
+            return {
+              volumeInfo: {
+                title: doc.title,
+                authors: doc.author_name || [],
+                categories: doc.subject || [],
+                pageCount: doc.number_of_pages_median || doc.number_of_pages || 0,
+                imageLinks: { thumbnail },
+                infoLink: `https://openlibrary.org${doc.key}`,
+                industryIdentifiers: doc.isbn ? [{ type: 'ISBN_13', identifier: doc.isbn[0] }] : []
+              }
+            };
+          })
+        };
+      } else {
+        throw new Error("Open Library docs empty");
       }
-    } catch (googleErr) {
-      console.error("All book APIs failed:", googleErr);
+    } catch (olErr) {
+      console.error("All book APIs failed:", olErr);
       data = { items: [] };
     }
   }
