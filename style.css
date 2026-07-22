@@ -32,8 +32,8 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   background-color: var(--bg-color); /* Seamless match with your theme */
   display: flex;
   justify-content: center;
@@ -191,8 +191,8 @@ body {
   z-index: 10000; /* Keeps it above the nav header */
   left: 0;
   top: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   background-color: rgba(44, 62, 45, 0.4); 
   backdrop-filter: blur(3px);
   display: flex;
@@ -823,8 +823,11 @@ body {
 }
 .focus-bg {
   position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  height: 125%; /* Adjust this based on how large you want the animation */
 }
 .focus-close {
   position: absolute;
@@ -1555,8 +1558,8 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   background-color: var(--bg-color);
   display: flex;
   justify-content: center;
@@ -1583,28 +1586,36 @@ body {
 .auth-toggle-group {
   display: flex;
   background: var(--bg-color);
+  padding: 4px;
   border: 1px solid var(--detail-line);
-  border-radius: 8px;
-  margin-bottom: 20px;
-  overflow: hidden;
+  border-radius: 30px;
+  margin-bottom: 25px;
+  gap: 4px;
 }
 
 .auth-toggle-btn {
   flex: 1;
   background: transparent;
   border: none;
-  padding: 8px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: bold;
   color: var(--sage-green);
+  border-radius: 25px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
 }
 
 .auth-toggle-btn.active {
   background: var(--sage-green);
   color: var(--bg-color);
-  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(89, 119, 85, 0.3);
+}
+
+.auth-toggle-btn:not(.active):hover {
+  background: rgba(89, 119, 85, 0.08);
 }
 
 .stacks-input {
@@ -1841,5 +1852,27 @@ body {
 .stacks-toast.show {
   transform: translateX(-50%) translateY(0);
   opacity: 1;
+}
+
+/* =========================================================================
+   DESKTOP CONSTRICTOR WRAPPER
+   ========================================================================= */
+html {
+  background-color: #2C3E2D; /* Deep forest green to frame the app on desktop */
+  transition: background-color 0.3s ease;
+}
+
+@media (min-width: 768px) {
+  body {
+    max-width: 430px;
+    margin: 0 auto;
+    border-left: 1px solid var(--detail-line);
+    border-right: 1px solid var(--detail-line);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.25);
+    transform: translate(0, 0); /* containing block context for fixed position elements */
+    min-height: 100vh;
+    height: 100vh;
+    position: relative;
+  }
 }
 
