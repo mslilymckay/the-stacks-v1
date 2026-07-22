@@ -1461,6 +1461,15 @@ function openDetails(book, clickedElement) {
         if (volumeInfo.pageCount) updates.pages = volumeInfo.pageCount;
         if (volumeInfo.categories?.length > 0) updates.category = normalizeCategory(volumeInfo.categories[0]);
         
+        // Sync ISBN if missing/default
+        const currentIsbn = getField(book, 'isbn');
+        if (!currentIsbn || currentIsbn === 'N/A' || currentIsbn === '--') {
+          if (volumeInfo.industryIdentifiers) {
+            const isbnObj = volumeInfo.industryIdentifiers.find(id => id.type === 'ISBN_13') || volumeInfo.industryIdentifiers.find(id => id.type === 'ISBN_10');
+            if (isbnObj) updates.isbn = isbnObj.identifier;
+          }
+        }
+        
         await updateMultipleBookFields(updates);
         const updatedBook = globalLibraryData.find(b => b.uuid === currentOpenBookId);
         openDetails(updatedBook);
@@ -1690,7 +1699,7 @@ async function searchGoogleBooks(query) {
     // Setup Add Book listeners inside search results
     document.querySelectorAll('.add-book-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
-        const button = e.target;
+        const button = btn; // Use direct reference instead of e.target to prevent nested click bugs
         
         const title = decodeURIComponent(button.dataset.title);
         const author = decodeURIComponent(button.dataset.author);
@@ -1750,17 +1759,23 @@ async function searchGoogleBooks(query) {
         const getKey = (name) => schema.find(k => k.toLowerCase() === name.toLowerCase()) || name;
         const hasKey = (name) => schema.some(k => k.toLowerCase() === name.toLowerCase());
 
-        const payload = {};
-        payload[getKey('uuid')] = crypto.randomUUID();
-        payload[getKey('title')] = title;
-        payload[getKey('author')] = author;
-        payload[getKey('status')] = 0; 
-        payload[getKey('isbn')] = isbn;
-        payload[getKey('category')] = category;
-        payload[getKey('cover_url')] = coverUrl;
-        payload[getKey('pages')] = 0;
-        payload[getKey('rating')] = 0;
-        payload[getKey('notes')] = '';
+        // Sanitizing null or undefined strings resulting from dataset parsing
+        const cleanIsbnVal = (isbn === 'null' || isbn === 'undefined') ? '' : isbn;
+        const cleanCategoryVal = (category === 'null' || category === 'undefined') ? 'Uncategorized' : category;
+
+        // Strictly use lowercase keys as defined in the Supabase schema to ensure proper Postgres mapping
+        const payload = {
+          uuid: crypto.randomUUID(),
+          title: title,
+          author: author,
+          status: 0,
+          isbn: cleanIsbnVal,
+          category: cleanCategoryVal,
+          cover_url: coverUrl === 'null' || coverUrl === 'undefined' ? '' : coverUrl,
+          pages: 0,
+          rating: 0,
+          notes: ''
+        };
         
         const nowIso = new Date().toISOString();
         if (schema.length > 0) {
@@ -2503,9 +2518,9 @@ async function fetchBooksFromAPIs(query) {
     finalQuery = `isbn:${numbersOnly}`;
   }
 
-  // Try Open Library first to avoid Google Books 429 rate limit errors
+  // Try Open Library first (with explicit fields parameter) to avoid keyless Google Books 429 rate limits
   try {
-    const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(finalQuery)}&limit=10`);
+    const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(finalQuery)}&limit=10&fields=key,title,author_name,cover_i,isbn,subject,number_of_pages_median,number_of_pages`);
     if (!response.ok) throw new Error("Open Library API failed");
     const olData = await response.json();
     if (olData.docs && olData.docs.length > 0) {
@@ -2536,7 +2551,7 @@ async function fetchBooksFromAPIs(query) {
       throw new Error("Open Library docs empty");
     }
   } catch (e) {
-    console.warn("Open Library API failed, trying Google Books:", e);
+    console.warn("Open Library API failed, falling back to Google Books:", e);
     try {
       const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(finalQuery)}&maxResults=10`);
       if (!response.ok) throw new Error(`Google Books returned status ${response.status}`);
