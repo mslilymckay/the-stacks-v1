@@ -43,6 +43,10 @@ function showToast(message) {
 
 // Global Caches and Application State Parameters
 let globalLibraryData = [];
+Object.defineProperty(window, 'globalLibraryData', {
+  get: () => globalLibraryData,
+  configurable: true
+});
 let libraryYearFilter = 'all'; // Tracks if the library is currently filtered by a specific year
 let currentOpenBookId = null;
 let returnViewId = 'view-library';
@@ -800,6 +804,7 @@ const quickBtns = document.querySelectorAll('.quick-btn, .filter-btn');
 if (wanderTriggerBtn && wanderSheet) {
   wanderTriggerBtn.addEventListener('click', () => {
     wanderSheet.classList.add('open');
+    wanderTriggerBtn.classList.remove('blinking');
   });
   
   const wanderHandle = wanderSheet.querySelector('.sheet-handle');
@@ -969,6 +974,20 @@ function navigateToQuickFilter(status, sort, sourceBtn = null) {
 
   window.lastAppliedSort = sort; 
   applyLibraryFilters();
+
+  if (status === '2') {
+    setTimeout(() => {
+      const heading = document.getElementById('your-stacks-heading');
+      const viewLib = document.getElementById('view-library');
+      if (heading && viewLib) {
+        viewLib.scrollTo({ top: heading.offsetTop - 10, behavior: 'smooth' });
+      }
+      const wanderBtn = document.getElementById('wander-trigger-btn');
+      if (wanderBtn) {
+        wanderBtn.classList.add('blinking');
+      }
+    }, 100);
+  }
 }
 
 // =========================================================================
@@ -2396,6 +2415,18 @@ function initStatsPage() {
 
       applyLibraryFilters(); 
       document.querySelectorAll('.hero-pill-btn').forEach(b => b.classList.remove('active'));
+
+      setTimeout(() => {
+        const heading = document.getElementById('your-stacks-heading');
+        const viewLib = document.getElementById('view-library');
+        if (heading && viewLib) {
+          viewLib.scrollTo({ top: heading.offsetTop - 10, behavior: 'smooth' });
+        }
+        const wanderBtn = document.getElementById('wander-trigger-btn');
+        if (wanderBtn) {
+          wanderBtn.classList.add('blinking');
+        }
+      }, 100);
     });
   }
 }

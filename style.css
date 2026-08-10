@@ -1876,3 +1876,17 @@ html {
   }
 }
 
+/* --- WANDER BUTTON BLINKING ANIMATION --- */
+@keyframes wander-blink-anim {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.wander.blinking {
+  animation: wander-blink-anim 0.9s ease-in-out 2;
+}
+
+
