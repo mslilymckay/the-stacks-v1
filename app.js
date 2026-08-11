@@ -1238,24 +1238,18 @@ function openDetails(book, clickedElement) {
   // Attach Details Event Listeners
   
   // Date Picker Pencil triggers
-  document.querySelectorAll('.pencil-trigger').forEach(trigger => {
-    trigger.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const targetId = trigger.getAttribute('data-target');
-      const targetInput = document.getElementById(targetId);
-      if (targetInput) {
+  document.querySelectorAll('.input-with-icon').forEach(wrapper => {
+    wrapper.addEventListener('click', (e) => {
+      const targetInput = wrapper.querySelector('.inline-edit-input');
+      if (targetInput && e.target !== targetInput && e.target.tagName !== 'SELECT') {
         if (targetInput.tagName === 'INPUT' && targetInput.type === 'date') {
           try {
             targetInput.showPicker();
           } catch (err) {
-            console.error('showPicker failed, falling back to focus/click:', err);
             targetInput.focus();
-            targetInput.click();
           }
         } else {
           targetInput.focus();
-          if (targetInput.select) targetInput.select();
         }
       }
     });
@@ -1266,7 +1260,24 @@ function openDetails(book, clickedElement) {
     const newStatus = parseInt(e.target.value);
     const updatedBook = globalLibraryData.find(b => b.uuid === currentOpenBookId);
     
-    await updateMultipleBookFields({ status: newStatus });
+    let updates = { status: newStatus };
+    const today = getLocalDateString();
+    
+    if (newStatus === 0) {
+      updates.date_started = null;
+      updates.read_date = null;
+    } else if (newStatus === 1) {
+      if (!getField(updatedBook, 'date_started')) {
+        updates.date_started = today;
+      }
+      updates.read_date = null;
+    } else if (newStatus === 2) {
+      updates.read_date = today;
+    } else if (newStatus === 3) {
+      updates.read_date = null;
+    }
+    
+    await updateMultipleBookFields(updates);
     
     renderHeroSection();
     openDetails(updatedBook); 
@@ -1750,15 +1761,16 @@ async function searchGoogleBooks(query) {
         if (duplicateFound) {
           const cancelBtn = document.getElementById('stacks-modal-cancel');
           const confirmBtn = document.getElementById('stacks-modal-confirm');
-          if (cancelBtn && confirmBtn) {
-            cancelBtn.textContent = "Open Existing";
-            confirmBtn.textContent = "Add Anyway";
-          }
-          const addAnyway = await showStacksModal(
+          const addAnywayPromise = showStacksModal(
             "Already in Stacks",
-            `"${title}" is already in your library.`,
+            `"${title}" is already in your library. Would you like to open the existing entry or start a new reading journey?`,
             true
           );
+          if (cancelBtn && confirmBtn) {
+            cancelBtn.textContent = "Open Existing";
+            confirmBtn.textContent = "Add New";
+          }
+          const addAnyway = await addAnywayPromise;
           if (cancelBtn && confirmBtn) {
             cancelBtn.textContent = "Cancel";
             confirmBtn.textContent = "Yes";
@@ -2490,9 +2502,10 @@ function normalizeCategory(cat) {
 
 function getLocalDateString() {
   const d = new Date();
-  const offset = d.getTimezoneOffset();
-  const localDate = new Date(d.getTime() - (offset * 60 * 1000));
-  return localDate.toISOString().split('T')[0];
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function trimCategory(cat, limit = 20) {
